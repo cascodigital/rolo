@@ -49,6 +49,30 @@ pip install ytmusicapi requests
 3. No terminal (venv ativo), rode: `ytmusicapi browser`.
 4. Cole o conteúdo (sem a linha do POST), dê **ENTER** e salve com **CTRL+D**.
 
+## 🤖 Integração com IA (Gemini CLI / Claude Code)
+
+Você pode usar o Rolo como uma "Skill" para o seu agente de IA.
+
+### 1. Instale o Gemini CLI
+```bash
+npm install -g @google/gemini-cli
+```
+
+### 2. Configure a Skill & MCP
+- **Skill:** Copie o conteúdo de `gemini/SKILL.md` para `~/.gemini/skills/rolo/SKILL.md`.
+- **MCP Server:** Adicione o servidor MCP ao seu arquivo de configuração (`~/.gemini/config.json`) para que a IA possa executar comandos automaticamente:
+
+```json
+"mcpServers": {
+  "rolo": {
+    "command": "python3",
+    "args": ["/home/seu-user/rolo/gemini/mcp_server.py"]
+  }
+}
+```
+
+Com isso, a IA passa a ter acesso às ferramentas `rolo.sync`, `rolo.analyze` e `rolo.create_playlist`.
+
 ## 🚀 Como Atualizar e Rodar
 
 Sempre execute o ciclo completo para manter o DNA atualizado:

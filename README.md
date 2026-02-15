@@ -8,24 +8,24 @@
 ![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
 ![YT Music](https://img.shields.io/badge/YouTube_Music-API-FF0000?style=flat-square&logo=youtubemusic&logoColor=white)
 
-Sub-mente de entretenimento projetada para analisar o DNA musical de um usuário via ListenBrainz e gerar curadorias no YouTube Music usando a regra **40/40/20**.
+Sub-mente de entretenimento projetada para analisar o DNA musical de um usuário via ListenBrainz e gerar curadorias no YouTube Music usando o algoritmo de equilíbrio dinâmico **40/40/20**.
 
-## 🏗️ Arquitetura de Dados
+## 🏗️ Ciclo de Vida dos Dados (O Fluxo)
 
-1.  **Ingestão (Bash + jq):** `utils/update_database.sh` coleta seu histórico do ListenBrainz.
-2.  **Processamento (Python):** `analysis/analyze_music_dna.py` gera o perfil de gosto.
-3.  **Execução (Python):** Scripts em `scripts/` montam as playlists.
+O Rolo não trabalha com "achismos". Ele segue um pipeline rigoroso de dados:
 
-## 📂 Estrutura do Repositório
+1.  **Ingestão (`utils/update_database.sh`):** Coleta até 10.000 registros (listens) do seu perfil no ListenBrainz. Ele é inteligente o suficiente para fazer o append incremental, mantendo seu `history_db.json` sempre fresco.
+2.  **Análise (`analysis/analyze_music_dna.py`):** É o cérebro que processa o JSON bruto. Aqui ele aplica o **Linkin Park Cap** (normalização logarítmica para artistas hiper-frequentados) e a **Vacinagem de Duplicatas** (ignora double scrobbles do Last.fm/Pear).
+3.  **DNA (`music_dna.json`):** O resultado da análise é um mapa do seu gosto, separando o que você ouve agora, o que você amava mas esqueceu, e o que define seu estilo.
+4.  **Criação (`scripts/create_work_playlist.py`):** O motor que consulta esse mapa e monta a playlist final no YouTube Music.
 
-```
-rolo/
-├── analysis/          # Motores de DNA e Processamento
-├── gemini/            # Integração com IA (Skills e MCP)
-├── scripts/           # Geração de Playlists no YouTube Music
-├── utils/             # Ingestão (Bash) e Manutenção
-└── docs/              # Snapshot das playlists geradas
-```
+## 📻 O Algoritmo 40/40/20
+
+Para evitar que suas playlists fiquem repetitivas ou estranhas, o Rolo força um equilíbrio matemático:
+
+*   **40% Nostalgia Real (Forgotten Gems):** O Rolo identifica artistas que estão no seu "Top 100 de todos os tempos", mas que você **não ouviu nenhuma vez nas últimas 1.000 músicas**. Ele resgata essas pérolas para garantir que você não esqueça suas raízes.
+*   **40% Descoberta Afim (Discovery):** Ele busca artistas novos ou menos ouvidos que compartilham o mesmo DNA técnico dos seus artistas favoritos. É a dose de frescor necessária.
+*   **20% Vício Atual (Current Mood):** Baseado estritamente nas suas **últimas 500 músicas**. É o que você está martelando no player agora, garantindo que a playlist tenha a sua "vibe" do momento.
 
 ## 🛠️ Instalação (Debian/Ubuntu/WSL)
 
@@ -35,58 +35,36 @@ sudo apt update && sudo apt install -y python3-venv jq curl
 ```
 
 ### 2. Ambiente Virtual & Dependências Python
+**IMPORTANTE:** Nunca use `sudo` para instalar pacotes Python na sua home.
 ```bash
+cd ~/rolo
 python3 -m venv .venv
 source .venv/bin/activate
 pip install ytmusicapi requests
 ```
 
-### 3. Configuração do ListenBrainz
-- Edite `utils/update_database.sh` e mude o `USER="seu_usuario"`.
-- Dê permissão: `chmod +x utils/update_database.sh`.
-- Execute a coleta: `./utils/update_database.sh`.
-
-### 4. Autenticação YouTube Music (Método F12)
-1. Abra o [YouTube Music](https://music.youtube.com) > F12 > aba Network.
+### 3. Autenticação YouTube Music (F12)
+1. Abra o [YouTube Music](https://music.youtube.com) > F12 > Network.
 2. Busque por uma requisição `browse` e copie os **Request Headers** (Raw).
 3. No terminal (venv ativo), rode: `ytmusicapi browser`.
-4. Cole o conteúdo, dê **ENTER** e salve com **CTRL+D**. O arquivo `browser.json` será gerado.
+4. Cole o conteúdo (sem a linha do POST), dê **ENTER** e salve com **CTRL+D**.
 
----
+## 🚀 Como Atualizar e Rodar
 
-## 🤖 Integração com IA (Gemini CLI)
-
-Você pode usar o Rolo como uma "Skill" para o seu agente de IA.
-
-### 1. Instale o Gemini CLI
-```bash
-npm install -g @google/gemini-cli
-```
-
-### 2. Configure a Skill
-Copie o conteúdo de `gemini/SKILL.md` para a pasta de skills do seu agente (geralmente `~/.gemini/skills/rolo/SKILL.md`). A partir daí, você pode pedir para a IA:
-> *"Skippy, aja como o Rolo e crie uma playlist baseada no meu DNA musical atual."*
-
----
-
-## 🚀 Uso Diário
+Sempre execute o ciclo completo para manter o DNA atualizado:
 
 ```bash
 source .venv/bin/activate
 
-# 1. Sincroniza DNA (Bash)
+# 1. Sincroniza o histórico (ListenBrainz -> local)
 ./utils/update_database.sh
 
-# 2. Analisa DNA (Python)
+# 2. Processa o DNA (Analisa pesos e tendências)
 python3 analysis/analyze_music_dna.py
 
-# 3. Cria Playlist (Python)
+# 3. Entrega a curadoria (Cria no YT Music)
 python3 scripts/create_work_playlist.py
 ```
 
-## ⚠️ Avisos e Segurança
-- **Duplicatas:** O script de análise possui lógica nativa para filtrar "Double Scrobbling" (comum em quem usa Last.fm + ListenBrainz).
-- **Linkin Park Cap:** Para evitar dominância de um único artista, aplicamos uma curva logarítmica para normalizar o peso de artistas com centenas de plays.
-
 ---
-Desenvolvido com 🐧 por **Casco Digital**.
+Desenvolvido com 🐧 por **Casco Digital** e **Skippy (Gemini CLI)**.

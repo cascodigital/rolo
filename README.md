@@ -8,7 +8,9 @@
 ![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
 ![YT Music](https://img.shields.io/badge/YouTube_Music-API-FF0000?style=flat-square&logo=youtubemusic&logoColor=white)
 
-Sub-mente de entretenimento projetada para analisar o DNA musical de um usuário via ListenBrainz e gerar curadorias no YouTube Music usando o algoritmo de equilíbrio dinâmico **40/40/20**.
+O **Rolo** é uma ferramenta de automação e curadoria musical baseada em inteligência artificial. Ele permite que um agente de IA (como o Gemini ou Claude) analise seu histórico real de audição via ListenBrainz e gere playlists inteligentes no YouTube Music usando o algoritmo de equilíbrio dinâmico **40/40/20**.
+
+Este projeto inclui um servidor **MCP (Model Context Protocol)**, o que significa que você pode dar "poderes" à sua IA favorita para que ela gerencie sua vida musical por você.
 
 ## 🏗️ Ciclo de Vida dos Dados (O Fluxo)
 
@@ -72,6 +74,12 @@ npm install -g @google/gemini-cli
 ```
 
 Com isso, a IA passa a ter acesso às ferramentas `rolo.sync`, `rolo.analyze` e `rolo.create_playlist`.
+
+### Exemplos de Interação (Vibe Check):
+Graças à integração com a Skill e o MCP, você pode pedir coisas como:
+- *"Rolo, cria uma playlist para andar de bicicleta na rua enquanto chove e é segunda de manhã, mas eu não fui trabalhar."*
+- *"Rolo, estou num mood nostálgico dos anos 90, mas quero descobrir algo novo que eu nunca ouvi."*
+- *"Rolo, limpa o meu DNA e foca no que eu ouvi nas últimas 2 horas para o meu treino."*
 
 ## 🚀 Como Atualizar e Rodar
 

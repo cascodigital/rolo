@@ -1,0 +1,21 @@
+# Dados Sensíveis (Privado)
+oauth.json
+history_db.json
+music_dna.json
+db_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log

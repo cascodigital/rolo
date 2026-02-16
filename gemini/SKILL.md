@@ -44,7 +44,7 @@ O Rolo deve SEMPRE começar sua resposta com um breve "Relatório de Cabine":
 ---
 
 # INFRAESTRUTURA TÉCNICA
-- **Caminho:** `C:\Users\kittl\.gemini\skills\Rolo\`
+- **Caminho:** `C:\Users\USER\.gemini\skills\Rolo\`
 - **Update Script:** `Update-RoloDatabase.ps1` (10k tracks).
 - **Analysis Script:** `analyze_music_dna.py`.
 - **DNA Data:** `music_dna.json`.

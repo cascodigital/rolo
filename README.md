@@ -1,11 +1,19 @@
-# Rolo: DNA-Driven Music Curation (Linux Edition) 🎧
+<div align="center">
 
-![Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Author](https://img.shields.io/badge/Author-Casco%20Digital-orange)
+# Rolo: DNA-Driven Music Curation
+
+**Linux music curation automation using listening history and the 40/40/20 rule.**
+
+![Status](https://img.shields.io/badge/Status-Active-16A34A?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-2563EB?style=flat-square)
+![Casco Digital](https://img.shields.io/badge/Casco-Digital-111827?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
 ![YT Music](https://img.shields.io/badge/YouTube_Music-API-FF0000?style=flat-square&logo=youtubemusic&logoColor=white)
+
+</div>
+
+---
 
 O **Rolo** é uma ferramenta de automação e curadoria musical baseada em inteligência artificial. Ele permite que um agente de IA (como o Gemini ou Claude) analise seu histórico real de audição via ListenBrainz e gere playlists inteligentes no YouTube Music usando o algoritmo de equilíbrio dinâmico **40/40/20**.
 

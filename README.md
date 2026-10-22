@@ -1,147 +1,148 @@
-<div align="center">
+# rolo
 
-# Rolo: DNA-Driven Music Curation
+Music curation toolkit that turns a ListenBrainz listening history into a taste profile an AI agent uses to build YouTube Music playlists.
 
-**Linux music curation automation using listening history and the 40/40/20 rule.**
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.12+-3776AB) ![Status](https://img.shields.io/badge/status-experimental-orange)
 
-![Status](https://img.shields.io/badge/Status-Active-16A34A?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-2563EB?style=flat-square)
-![Casco Digital](https://img.shields.io/badge/Casco-Digital-111827?style=flat-square)
-![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white)
-![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)
-![YT Music](https://img.shields.io/badge/YouTube_Music-API-FF0000?style=flat-square&logo=youtubemusic&logoColor=white)
+## Overview
 
-</div>
+Streaming-service recommendations tend to loop over the same few artists and ignore what a listener loved years
+ago. Rolo pulls up to 10,000 listens from ListenBrainz, condenses them into a compact `music_dna.json` profile
+(weighted favorites, current mood, forgotten favorites) and hands that profile to an LLM agent (Gemini CLI or
+Claude Code). The agent then picks tracks with a 40/40/20 mix and creates the playlist on YouTube Music.
 
----
+## Features
 
-O **Rolo** é uma ferramenta de automação e curadoria musical baseada em inteligência artificial. Ele permite que um agente de IA (como o Gemini ou Claude) analise seu histórico real de audição via ListenBrainz e gere playlists inteligentes no YouTube Music usando o algoritmo de equilíbrio dinâmico **40/40/20**.
+- Syncs up to 10,000 listens from the public ListenBrainz API into a local `history_db.json`, paging backwards by timestamp.
+- Builds a taste profile: top 20 artists by weighted score, the 10 most-played artists in the last 500 listens, and up to 15 top-100 artists absent from the last 1,000 listens.
+- Flattens over-represented artists with a logarithmic weight cap so one artist cannot dominate the profile.
+- Drops double scrobbles (same artist, same title prefix, same timestamp).
+- Lists "forgotten gems" (artists with 3+ plays not heard in 6 months) and top tracks with their YouTube video IDs.
+- Creates public YouTube Music playlists from search queries via `ytmusicapi`.
+- Ships an agent persona prompt (`gemini/SKILL.md`) and a small stdio command server so an agent can run sync, analysis and playlist creation.
 
-Este projeto inclui um servidor **MCP (Model Context Protocol)**, o que significa que você pode dar "poderes" à sua IA favorita para que ela gerencie sua vida musical por você.
+## How it works
 
-## 🏗️ Ciclo de Vida dos Dados (O Fluxo)
-
-O Rolo não trabalha com "achismos". Ele segue um pipeline rigoroso de dados:
-
-1.  **Ingestão (`utils/update_database.sh`):** Coleta até 10.000 registros (listens) do seu perfil no ListenBrainz. Ele é inteligente o suficiente para fazer o append incremental, mantendo seu `history_db.json` sempre fresco.
-
-2.  **Análise (`analysis/analyze_music_dna.py`):** É o cérebro que processa o JSON bruto. Aqui ele aplica o **Linkin Park Cap** (normalização logarítmica para artistas hiper-frequentados) e a **Vacinagem de Duplicatas** (ignora double scrobbles do Last.fm/Pear).
-
-3.  **DNA (`music_dna.json`):** O resultado da análise é um mapa do seu gosto, separando o que você ouve agora, o que você amava mas esqueceu, e o que define seu estilo.
-
-4.  **Criação (`scripts/create_work_playlist.py`):** O motor que consulta esse mapa e monta a playlist final no YouTube Music.
-
----
-
-## 📻 O Algoritmo 40/40/20
-
-Para evitar que suas playlists fiquem repetitivas ou estranhas, o Rolo força um equilíbrio matemático:
-
-- **40% Nostalgia Real (Forgotten Gems):** O Rolo identifica artistas que estão no seu "Top 100 de todos os tempos", mas que você **não ouviu nenhuma vez nas últimas 1.000 músicas**. Ele resgata essas pérolas para garantir que você não esqueça suas raízes.
-
-- **40% Descoberta Afim (Discovery):** Ele busca artistas novos ou menos ouvidos que compartilham o mesmo DNA técnico dos seus artistas favoritos. É a dose de frescor necessária.
-
-- **20% Vício Atual (Current Mood):** Baseado estritamente nas suas **últimas 500 músicas**. É o que você está martelando no player agora, garantindo que a playlist tenha a sua "vibe" do momento.
-
----
-
-## 🛠️ Guia de Instalação (Debian/Ubuntu/WSL)
-
-Siga estes passos na ordem exata para evitar erros de permissão ou dependências:
-
-### 1. Preparação do Sistema
-Instale as ferramentas de base necessárias para o processamento de JSON e comunicação com APIs:
-```bash
-sudo apt update && sudo apt install -y python3-venv jq curl
+```
+ListenBrainz API --> utils/update_database.sh --> history_db.json
+                                                      |
+                                    analysis/analyze_music_dna.py
+                                                      |
+                                               music_dna.json
+                                                      |
+                     LLM agent (gemini/SKILL.md persona, 40/40/20 rule)
+                                                      |
+                              ytmusicapi (browser.json auth) --> YouTube Music playlist
 ```
 
-### 2. Configuração do Ambiente Python
-**AVISO:** Nunca utilize `sudo` para comandos `pip` ou `venv` dentro da sua pasta home.
-```bash
-# Entre na pasta do projeto
-cd ~/rolo
+- **Ingestion** (`utils/update_database.sh`): bash + `curl` + `jq`. Requests 100 listens per call with `max_ts`
+  paging and merges batches through temp files to avoid shell argument-length limits. Listens are stored newest first.
+- **Analysis** (`analysis/analyze_music_dna.py`): counts per artist after de-duplication. Above 150 plays the
+  weight becomes `150 + 15 * log2(count - 149)`. Writes `music_dna.json` with `top_dna_weighted`,
+  `current_mood_artists` and `forgotten_gems_artists`. Only the top 20 artists are written to keep the agent's context small.
+- **Curation**: the 40/40/20 rule is applied by the agent, guided by `gemini/SKILL.md`:
+  40% forgotten gems, 40% discovery of artists similar to the weighted top, 20% current mood.
+  The persona prompt is intentionally written in Brazilian Portuguese, the language of its end user.
+- **Delivery**: `ytmusicapi` authenticated with browser request headers (`browser.json`).
+- **Agent bridge** (`gemini/mcp_server.py`): reads one JSON object per line on stdin and answers on stdout.
+  Methods `rolo.sync`, `rolo.analyze` and `rolo.create_playlist` run the three scripts above.
 
-# Criação do ambiente virtual isolado
-python3 -m venv .venv
+## Requirements
 
-# Ativação do ambiente (Obrigatório em toda nova sessão)
-source .venv/bin/activate
+- Linux (Debian/Ubuntu/WSL tested), bash, `curl`, `jq`
+- Python 3.12+ with `ytmusicapi` and `requests`
+- A ListenBrainz account with scrobbled history (public listens; no token needed)
+- A YouTube Music account (browser request headers for `ytmusicapi`)
+- Optional: Gemini CLI or Claude Code to act as the curation agent
 
-# Instalação das bibliotecas necessárias
-pip install ytmusicapi requests
-```
+## Quick start
 
-### 3. Configuração do Histórico (ListenBrainz)
-O Rolo precisa de dados para trabalhar. Usamos o ListenBrainz como fonte:
-1. Abra o arquivo `utils/update_database.sh` e mude a variável `USER="seu_usuario"` para o seu nome de usuário do ListenBrainz.
-2. Dê permissão de execução ao script:
+1. Install system packages and the Python environment:
+   ```bash
+   sudo apt update && sudo apt install -y python3-venv jq curl
+   cd rolo
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install ytmusicapi requests
+   ```
+2. Set your ListenBrainz username in `utils/update_database.sh` (`USER="YOUR_LISTENBRAINZ_USER"`), then sync:
    ```bash
    chmod +x utils/update_database.sh
-   ```
-3. Execute a primeira sincronização:
-   ```bash
    ./utils/update_database.sh
    ```
-
-### 4. Autenticação YouTube Music (F12)
-Para o Rolo conseguir criar playlists, ele precisa dos seus cabeçalhos de navegação (Cookies/Auth):
-1. Abra o [YouTube Music](https://music.youtube.com) no navegador e faça login.
-2. Pressione **F12** > aba **Network** (Rede).
-3. Procure por uma requisição chamada **`browse`** (clique em qualquer playlist para forçar a requisição).
-4. Em **Request Headers**, clique no botão **"Raw"** e copie **TODO o conteúdo** (exceto a primeira linha que começa com `POST`).
-5. No terminal (com o `.venv` ativo), rode:
+3. Create YouTube Music credentials. Open https://music.youtube.com logged in, press F12, open the Network tab,
+   click any playlist and select a `browse` request. Copy the raw request headers (everything after the first
+   `POST` line), then run the command below, paste, press Enter on an empty line and finish with `Ctrl+D`.
+   Save the result as `browser.json` in the project root.
    ```bash
    ytmusicapi browser
    ```
-6. Cole o conteúdo, pressione **ENTER** para criar uma linha vazia e salve com **`CTRL+D`**.
-7. O arquivo `browser.json` será gerado na raiz do projeto.
+4. Build the taste profile and inspect it:
+   ```bash
+   python3 analysis/analyze_music_dna.py
+   cat music_dna.json
+   ```
 
----
+## Configuration
 
-## 🤖 Integração com IA (Gemini CLI / Claude Code)
+| Variable / key | Required | Default | Description |
+| --- | --- | --- | --- |
+| `USER` in `utils/update_database.sh` | Yes | `YOUR_LISTENBRAINZ_USER` | ListenBrainz username to sync |
+| `TARGET_COUNT` in `utils/update_database.sh` | No | `10000` | Number of listens to keep locally |
+| `USER` in `analysis/get_history.py` | For that script | `YOUR_LISTENBRAINZ_USER` | Username for the quick 50-listen preview |
+| `RECENT_THRESHOLD` in `analysis/analyze_music_dna.py` | No | `500` | Listens that define the current mood |
+| `FORGOTTEN_LIMIT` in `analysis/analyze_music_dna.py` | No | `1000` | Window an artist must be absent from to count as forgotten |
+| `LINKIN_PARK_CAP` in `analysis/analyze_music_dna.py` | No | `150` | Play count where weight flattening starts |
+| `browser.json` (or `oauth.json`) | Yes, for playlists | none | `ytmusicapi` credentials; git-ignored |
 
-Você pode usar o Rolo como uma "Skill" para o seu agente de IA.
+## Usage
 
-### 1. Configuração de Skill & MCP
-- **Skill:** Copie `gemini/SKILL.md` para `~/.gemini/skills/rolo/SKILL.md`.
-- **MCP Server:** Adicione o servidor MCP ao seu arquivo de configuração (`~/.gemini/config.json`):
-
-```json
-"mcpServers": {
-  "rolo": {
-    "command": "python3",
-    "args": ["/home/seu-user/rolo/gemini/mcp_server.py"]
-  }
-}
-```
-
-Com isso, a IA passa a ter acesso às ferramentas `rolo.sync`, `rolo.analyze` e `rolo.create_playlist`.
-
-### 2. Exemplos de Interação (Vibe Check)
-Graças à integração com a Skill e o MCP, você pode pedir coisas como:
-
-- *"Rolo, cria uma playlist para andar de bicicleta na rua enquanto chove e é segunda de manhã, mas eu não fui trabalhar."*
-- *"Rolo, estou num mood nostálgico dos anos 90, mas quero descobrir algo novo que eu nunca ouvi."*
-- *"Rolo, limpa o meu DNA e foca no que eu ouvi nas últimas 2 horas para o meu treino."*
-
----
-
-## 🚀 Como Atualizar e Rodar
-
-Sempre execute o ciclo completo para manter o DNA atualizado:
+Full cycle:
 
 ```bash
 source .venv/bin/activate
-
-# 1. Sincroniza o histórico (ListenBrainz -> local)
-./utils/update_database.sh
-
-# 2. Processa o DNA (Analisa pesos e tendências)
-python3 analysis/analyze_music_dna.py
-
-# 3. Entrega a curadoria (Cria no YT Music)
-python3 scripts/create_work_playlist.py
+./utils/update_database.sh                 # ListenBrainz -> history_db.json
+python3 analysis/analyze_music_dna.py      # history_db.json -> music_dna.json
+python3 scripts/create_work_playlist.py    # create a playlist on YouTube Music
 ```
 
----
-Desenvolvido com 🐧 por **Casco Digital** e **Skippy**.
+| Script | What it does | Changes state? |
+| --- | --- | --- |
+| `utils/update_database.sh` | Syncs listens from ListenBrainz into `history_db.json` and prints the top 10 artists | Writes local file |
+| `analysis/analyze_music_dna.py` | Builds `music_dna.json` from the history | Writes local file |
+| `analysis/analyze_forgotten_gems.py` | Prints 20 random artists (with best track and video ID) not heard in 6 months | No |
+| `analysis/get_favorites.py` | Prints the 15 most-played tracks with video IDs, excluding Linkin Park | No |
+| `analysis/get_history.py` | Prints the last 50 listens and top 5 artists from the API | No |
+| `scripts/create_work_playlist.py` | Searches a fixed list of example queries and creates a public playlist | Yes, YouTube Music |
+| `scripts/create_test_playlist.py` | Creates a public 3-track test playlist | Yes, YouTube Music |
+| `utils/make_all_playlists_public.py` | Sets every library playlist (except system ones) to PUBLIC | Yes, YouTube Music |
+
+### Agent integration (Gemini CLI / Claude Code)
+
+- Copy `gemini/SKILL.md` to `~/.gemini/skills/rolo/SKILL.md`.
+- Register the command server in the agent configuration:
+  ```json
+  "mcpServers": {
+    "rolo": {
+      "command": "python3",
+      "args": ["/path/to/rolo/gemini/mcp_server.py"]
+    }
+  }
+  ```
+- Requests look like `{"id": 1, "method": "rolo.analyze"}`. The response contains the script's stdout, stderr and exit code.
+
+## Limitations
+
+- `gemini/mcp_server.py` is a minimal line-based JSON protocol, not a spec-compliant MCP server
+  (no JSON-RPC 2.0 initialize handshake or `tools/list`). Agents that require full MCP will not detect its tools.
+- `scripts/create_work_playlist.py` uses a hardcoded query list; it does not read `music_dna.json`.
+  Track selection based on the profile is done by the agent.
+- `analysis/analyze_forgotten_gems.py` uses a 6-month time window, while `music_dna.json` uses the last-1,000-listens window; results differ.
+- Configuration lives in script constants, not a config file or environment variables.
+- `create_test_playlist.py` and `make_all_playlists_public.py` look for credentials in the current directory; run them from the project root.
+- Browser-header authentication expires and must be regenerated periodically.
+- Re-running the sync after reaching `TARGET_COUNT` does not fetch newer listens.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

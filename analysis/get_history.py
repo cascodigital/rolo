@@ -10,7 +10,7 @@ try:
     response.raise_for_status()
     data = response.json()
     
-    print(f"--- HISTÓRICO RECENTE DE {USER.upper()} ---")
+    print(f"--- RECENT HISTORY FOR {USER.upper()} ---")
     
     genres = {}
     artists = {}
@@ -26,10 +26,10 @@ try:
         artists[artist] = artists.get(artist, 0) + 1
         count += 1
 
-    print("\n--- TOP ARTISTAS NA AMOSTRA ---")
+    print("\n--- TOP ARTISTS IN SAMPLE ---")
     sorted_artists = sorted(artists.items(), key=lambda x: x[1], reverse=True)[:5]
     for art, qtd in sorted_artists:
-        print(f"{art}: {qtd} vezes")
+        print(f"{art}: {qtd} plays")
 
 except Exception as e:
-    print(f"Erro ao buscar ListenBrainz: {e}")
+    print(f"Error fetching from ListenBrainz: {e}")

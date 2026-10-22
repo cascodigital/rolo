@@ -1,4 +1,5 @@
-# Dados Sensíveis (Privado)
+# Sensitive data (private): credentials and listening history
+browser.json
 oauth.json
 history_db.json
 music_dna.json

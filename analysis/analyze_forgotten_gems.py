@@ -5,23 +5,23 @@ from datetime import datetime
 
 import os
 
-# Configurações
+# Settings
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 DB_PATH = os.path.join(PROJECT_ROOT, "history_db.json")
 SIX_MONTHS_AGO = int(time.time()) - (180 * 24 * 60 * 60)
 
 def analyze():
-    print("Carregando o banco de dados (pode demorar um tiquinho)...")
+    print("Loading the history database (this may take a moment)...")
     try:
         with open(DB_PATH, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Erro ao ler o DB: {e}")
+        print(f"Error reading the database: {e}")
         return
 
     listens = data.get('listens', [])
-    print(f"Total de listens analisados: {len(listens)}")
+    print(f"Total listens analyzed: {len(listens)}")
 
     artist_stats = {}
 
@@ -63,8 +63,8 @@ def analyze():
 
     # Filter: Forgotten Gems
     # Criteria: 
-    # 1. Last listen < 6 months ago
-    # 2. Total plays > 3
+    # 1. Last listen more than 6 months ago
+    # 2. Total plays >= 3
     
     forgotten_gems = []
 
@@ -96,7 +96,7 @@ def analyze():
     top_candidates = forgotten_gems[:100] # Pool of top 100 forgotten artists
     
     if not top_candidates:
-        print("Nenhuma pérola esquecida encontrada com os critérios atuais.")
+        print("No forgotten gems found with the current criteria.")
         return
 
     random.shuffle(top_candidates)

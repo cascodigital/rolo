@@ -4,7 +4,7 @@ import re
 
 import os
 
-# Caminho relativo para o banco de dados
+# Path to the history database, relative to the project root
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 db_path = os.path.join(project_root, 'history_db.json')
@@ -45,7 +45,7 @@ try:
             if vid:
                 track_video_ids[key] = vid
 
-    # Get top 30 (buffer for missing IDs)
+    # Get top 50 (buffer for missing IDs), output the first 15
     top_tracks = track_counts.most_common(50)
     
     final_list = []

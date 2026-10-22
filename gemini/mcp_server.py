@@ -3,7 +3,7 @@ import subprocess
 import json
 import sys
 
-# Caminhos base
+# Base paths
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VENV_PYTHON = os.path.join(PROJECT_ROOT, ".venv", "bin", "python3")
 UPDATE_SH = os.path.join(PROJECT_ROOT, "utils", "update_database.sh")
@@ -18,8 +18,8 @@ def run_command(command, is_shell=False):
         return {"error": str(e)}
 
 def main():
-    # Este é um servidor MCP simplificado que responde a comandos via stdio
-    # No futuro, pode ser expandido usando a SDK oficial do MCP
+    # Simplified stdio server: reads one JSON request per line and replies with one JSON line.
+    # Can later be migrated to the official MCP SDK.
     print("Rolo MCP Server Active. Ready for commands.", file=sys.stderr)
     
     while True:

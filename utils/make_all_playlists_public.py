@@ -2,41 +2,41 @@ from ytmusicapi import YTMusic
 import os
 
 def make_all_public():
-    # Tenta browser.json primeiro, depois oauth.json
+    # Try browser.json first, then oauth.json (current directory)
     auth_file = "browser.json"
     if not os.path.exists(auth_file):
         auth_file = "oauth.json"
         
     if not os.path.exists(auth_file):
-        print(f"❌ Arquivo de autenticação (browser.json ou oauth.json) não encontrado.")
+        print("Error: authentication file (browser.json or oauth.json) not found.")
         return
 
     try:
         yt = YTMusic(auth_file)
         playlists = yt.get_library_playlists(limit=100)
         
-        print(f"🔄 Encontradas {len(playlists)} playlists. Iniciando conversão para PUBLIC...")
+        print(f"Found {len(playlists)} playlists. Setting them to PUBLIC...")
         
         for p in playlists:
             p_id = p['playlistId']
             title = p['title']
             
-            # Ignorar playlists de sistema
+            # Skip system playlists (Liked Music, Episodes for Later)
             if p_id in ['LM', 'SE']:
                 continue
                 
             try:
-                # O status de privacidade não vem no get_library_playlists básico, 
-                # então editamos todas para garantir.
+                # get_library_playlists does not return privacy status,
+                # so every playlist is edited.
                 yt.edit_playlist(p_id, privacyStatus='PUBLIC')
-                print(f"✅ '{title}' agora é PÚBLICA.")
+                print(f"'{title}' is now PUBLIC.")
             except Exception as e:
-                print(f"⚠️ Erro ao editar '{title}': {e}")
+                print(f"[!] Failed to edit '{title}': {e}")
                 
-        print("\n🔥 Operação concluída! O mundo agora pode ouvir seu bom (ou duvidoso) gosto musical.")
+        print("\nDone.")
 
     except Exception as e:
-        print(f"💥 Erro geral: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     make_all_public()

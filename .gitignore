@@ -20,3 +20,10 @@ desktop.ini
 
 # Logs
 *.log
+
+# Runtime state written by the pipeline
+feedback.json
+*.bak
+*.partial
+.update.lock
+.feedback.lock

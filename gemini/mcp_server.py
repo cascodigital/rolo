@@ -6,8 +6,11 @@ import sys
 # Base paths
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VENV_PYTHON = os.path.join(PROJECT_ROOT, ".venv", "bin", "python3")
-UPDATE_SH = os.path.join(PROJECT_ROOT, "utils", "update_database.sh")
-ANALYZE_PY = os.path.join(PROJECT_ROOT, "analysis", "analyze_music_dna.py")
+if not os.path.exists(VENV_PYTHON):
+    VENV_PYTHON = sys.executable
+UPDATE_SH = os.path.join(PROJECT_ROOT, "rolo_update.sh")
+ANALYZE_PY = os.path.join(PROJECT_ROOT, "analyze_music_dna.py")
+CURATE_PY = os.path.join(PROJECT_ROOT, "rolo_curate.py")
 CREATE_PY = os.path.join(PROJECT_ROOT, "scripts", "create_work_playlist.py")
 
 def run_command(command, is_shell=False):
@@ -32,9 +35,11 @@ def main():
             method = request.get("method")
             
             if method == "rolo.sync":
-                response = run_command([UPDATE_SH])
+                response = run_command(["bash", UPDATE_SH, "--force"])
             elif method == "rolo.analyze":
                 response = run_command([VENV_PYTHON, ANALYZE_PY])
+            elif method == "rolo.context":
+                response = run_command([VENV_PYTHON, CURATE_PY, "context"])
             elif method == "rolo.create_playlist":
                 response = run_command([VENV_PYTHON, CREATE_PY])
             else:
